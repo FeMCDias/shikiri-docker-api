@@ -1,0 +1,111 @@
+version: '3.8'
+name: shikiri
+
+services:
+
+  db-shikiri:
+    container_name: shikiri-db-shikiri
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=shikiri
+      - POSTGRES_PASSWORD=shikiri
+      - POSTGRES_DB=shikiri
+    volumes:
+      - $VOLUME/postgres/shikiri/data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - private-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: shikiri-prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - $VOLUME/prometheus:/etc/prometheus
+      - $VOLUME/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - private-network
+
+  grafana:
+    container_name: shikiri-grafana
+    image: grafana/grafana-enterprise
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - $VOLUME/grafana:/var/lib/grafana
+      - $VOLUME/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources      
+    restart: always
+    networks:
+      - private-network
+
+  discovery:
+    build:
+      context: ../shikiri.discovery/
+      dockerfile: Dockerfile
+    container_name: shikiri-discovery
+    image: shikiri-discovery:latest
+    ports:
+      - 8761:8761
+    restart: always
+    networks:
+      - private-network
+
+  gateway:
+    build:
+      context: ../shikiri.gateway/
+      dockerfile: Dockerfile
+    container_name: shikiri-gateway
+    image: shikiri-gateway:latest
+    ports:
+      - 8080:8080
+    environment:
+      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
+    networks:
+      - private-network
+    depends_on:
+      - discovery
+
+  account:
+    build:
+      context: ../shikiri.account-resource/
+      dockerfile: Dockerfile
+    image: shikiri-account:latest
+    environment:
+      - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
+      - spring.datasource.username=shikiri
+      - spring.datasource.password=shikiri
+      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
+    deploy:
+      mode: replicated
+      replicas: 1
+    restart: always
+    networks:
+      - private-network
+    depends_on:
+      - db-shikiri
+      - discovery
+
+  auth:
+    build:
+      context: ../shikiri.auth-resource/
+      dockerfile: Dockerfile
+    image: shikiri-auth:latest
+    environment:
+      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
+    deploy:
+      mode: replicated
+      replicas: 1
+    networks:
+      - private-network
+    depends_on:
+      - discovery
+      - account
+
+networks:
+  private-network:
+    driver: bridge
