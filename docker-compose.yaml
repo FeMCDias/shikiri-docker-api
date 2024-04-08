@@ -110,6 +110,22 @@ services:
       - db-shikiri
       - discovery
 
+  tools:
+    build:
+      context: ../shikiri-tools/
+      dockerfile: Dockerfile
+    container_name: shikiri-tools
+    image: shikiri-gateway:latest
+    ports:
+      - 8082:8082
+    environment:
+      - eureka.client.service-url.defaultZone=http://shikiri-tools:8762/eureka/
+    networks:
+      - private-network
+    depends_on:
+      - db-shikiri
+      - discovery
+
   auth:
     build:
       context: ../shikiri-auth-resource/
