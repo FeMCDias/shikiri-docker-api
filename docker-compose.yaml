@@ -112,14 +112,18 @@ services:
 
   tools:
     build:
-      context: ../shikiri-tools/
+      context: ../shikiri-tool-resource/
       dockerfile: Dockerfile
-    container_name: shikiri-tools
-    image: shikiri-gateway:latest
+    container_name: shikiri-tool
+    image: shikiri-tool:latest
     ports:
       - 8082:8082
     environment:
-      - eureka.client.service-url.defaultZone=http://shikiri-tools:8762/eureka/
+      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
+    deploy:
+      mode: replicated
+      replicas: 1
+    restart: always
     networks:
       - private-network
     depends_on:
