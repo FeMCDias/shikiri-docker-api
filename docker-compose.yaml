@@ -74,6 +74,7 @@ services:
     build:
       context: ../shikiri-account-resource/
       dockerfile: Dockerfile
+    container_name: shikiri-account
     image: shikiri-account:latest
     environment:
       - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
@@ -109,6 +110,27 @@ services:
     depends_on:
       - db-shikiri
       - discovery
+
+  # boards:
+  #   build:
+  #     context: ../shikiri-board-resource/
+  #     dockerfile: Dockerfile
+  #   container_name: shikiri-board
+  #   image: shikiri-boards:latest
+  #   environment:
+  #     - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
+  #     - spring.datasource.username=shikiri
+  #     - spring.datasource.password=shikiri
+  #     - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
+  #   deploy:
+  #     mode: replicated
+  #     replicas: 1
+  #   restart: always
+  #   networks:
+  #     - private-network
+  #   depends_on:
+  #     - db-shikiri
+  #     - discovery
 
   tools:
     build:
