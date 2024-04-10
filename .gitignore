@@ -25,5 +25,5 @@ replay_pid*
 
 target/
 volume/
-
+.env
 .DS_Store
