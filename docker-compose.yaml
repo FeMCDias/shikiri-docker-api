@@ -111,12 +111,12 @@ services:
       - db-shikiri
       - discovery
 
-  boards:
+  board:
     build:
       context: ../shikiri-board-resource/
       dockerfile: Dockerfile
     container_name: shikiri-board
-    image: shikiri-boards:latest
+    image: shikiri-board:latest
     environment:
       - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
       - spring.datasource.username=shikiri
