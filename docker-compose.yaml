@@ -2,7 +2,6 @@ version: '3.8'
 name: shikiri
 
 services:
-
   db-shikiri:
     container_name: shikiri-db-shikiri
     image: postgres:latest
@@ -14,7 +13,21 @@ services:
       - POSTGRES_DB=shikiri
     volumes:
       - $VOLUME/postgres/shikiri/data:/var/lib/postgresql/data
-    restart: always
+    # restart: always
+    networks:
+      - private-network
+
+  redis:
+    container_name: shikiri-redis
+    image: redis:latest
+    ports:
+      - 6379:6379
+    environment:
+      - REDIS_HOST=shikiri-redis
+      - REDIS_PORT=6379
+    volumes:
+      - $VOLUME/redis:/data
+    # restart: always
     networks:
       - private-network
 
@@ -39,7 +52,7 @@ services:
     volumes:
       - $VOLUME/grafana:/var/lib/grafana
       - $VOLUME/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources      
-    restart: always
+    # restart: always
     networks:
       - private-network
 
@@ -51,7 +64,7 @@ services:
     image: shikiri-discovery:latest
     ports:
       - 8761:8761
-    restart: always
+    # restart: always
     networks:
       - private-network
 
@@ -84,74 +97,13 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-    restart: always
+    # restart: always
     networks:
       - private-network
     depends_on:
       - db-shikiri
       - discovery
-
-  tasks:
-    build:
-      context: ../shikiri-tasks-resource/
-      dockerfile: Dockerfile
-    image: shikiri-tasks:latest
-    environment:
-      - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
-      - spring.datasource.username=shikiri
-      - spring.datasource.password=shikiri
-      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
-    deploy:
-      mode: replicated
-      replicas: 1
-    restart: always
-    networks:
-      - private-network
-    depends_on:
-      - db-shikiri
-      - discovery
-
-  board:
-    build:
-      context: ../shikiri-board-resource/
-      dockerfile: Dockerfile
-    container_name: shikiri-board
-    image: shikiri-board:latest
-    environment:
-      - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
-      - spring.datasource.username=shikiri
-      - spring.datasource.password=shikiri
-      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
-    deploy:
-      mode: replicated
-      replicas: 1
-    restart: always
-    networks:
-      - private-network
-    depends_on:
-      - db-shikiri
-      - discovery
-
-  tools:
-    build:
-      context: ../shikiri-tool-resource/
-      dockerfile: Dockerfile
-    container_name: shikiri-tool
-    image: shikiri-tool:latest
-    environment:
-      - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
-      - spring.datasource.username=shikiri
-      - spring.datasource.password=shikiri
-      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
-    deploy:
-      mode: replicated
-      replicas: 1
-    restart: always
-    networks:
-      - private-network
-    depends_on:
-      - db-shikiri
-      - discovery
+      - redis
 
   auth:
     build:
@@ -171,6 +123,71 @@ services:
     depends_on:
       - discovery
       - account
+
+  tasks:
+    build:
+      context: ../shikiri-tasks-resource/
+      dockerfile: Dockerfile
+    image: shikiri-tasks:latest
+    environment:
+      - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
+      - spring.datasource.username=shikiri
+      - spring.datasource.password=shikiri
+      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
+    deploy:
+      mode: replicated
+      replicas: 1
+    # restart: always
+    networks:
+      - private-network
+    depends_on:
+      - db-shikiri
+      - discovery
+      - redis
+
+  tools:
+    build:
+      context: ../shikiri-tool-resource/
+      dockerfile: Dockerfile
+    container_name: shikiri-tool
+    image: shikiri-tool:latest
+    environment:
+      - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
+      - spring.datasource.username=shikiri
+      - spring.datasource.password=shikiri
+      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
+    deploy:
+      mode: replicated
+      replicas: 1
+    # restart: always
+    networks:
+      - private-network
+    depends_on:
+      - db-shikiri
+      - discovery
+      - redis
+
+  board:
+    build:
+      context: ../shikiri-board-resource/
+      dockerfile: Dockerfile
+    container_name: shikiri-board
+    image: shikiri-board:latest
+    environment:
+      - spring.datasource.url=jdbc:postgresql://shikiri-db-shikiri:5432/shikiri
+      - spring.datasource.username=shikiri
+      - spring.datasource.password=shikiri
+      - eureka.client.service-url.defaultZone=http://shikiri-discovery:8761/eureka/
+    deploy:
+      mode: replicated
+      replicas: 1
+    # restart: always
+    networks:
+      - private-network
+    depends_on:
+      - db-shikiri
+      - discovery
+      - redis
 
 networks:
   private-network:
